@@ -4,37 +4,110 @@
 <meta charset="UTF-8">
 <title>Kizuna - Ajouter des amis</title>
 <style>
-body { font-family: Arial; background: #DAD7CD; color: #344E41; padding: 20px; }
-ul { list-style: none; padding: 0; }
-li { margin-bottom: 5px; }
-button { margin-left: 5px; }
+body {
+    font-family: Arial, sans-serif;
+    background: #DAD7CD;
+    color: #344E41;
+    padding: 20px;
+}
+h1 {
+    text-align: center;
+}
+input, button {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border: 1px solid #344E41;
+}
+ul {
+    list-style: none;
+    padding: 0;
+}
+li {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #A3B18A;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+li button {
+    cursor: pointer;
+    background: #5C7650;
+    color: #DAD7CD;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+li button:hover {
+    background: #344E41;
+}
+#searchInput {
+    width: 100%;
+    font-size: 16px;
+}
 </style>
 </head>
 <body>
 
 <h1>Ajouter des amis</h1>
+<input type="text" id="searchInput" placeholder="Rechercher un utilisateur...">
 <ul id="usersList"></ul>
 
 <script>
+let allUsers = [];
+
+// Récupère la liste de tous les utilisateurs disponibles
 async function fetchUsers() {
-    const res = await fetch("/users");
-    const users = await res.json();
+    try {
+        const res = await fetch("/users"); // doit renvoyer JSON [{id, username}]
+        allUsers = await res.json();
+        displayUsers(allUsers);
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+// Affiche les utilisateurs dans la liste
+function displayUsers(users) {
     const ul = document.getElementById("usersList");
     ul.innerHTML = "";
     users.forEach(u => {
         const li = document.createElement("li");
         li.textContent = u.username;
+
         const btn = document.createElement("button");
         btn.textContent = "Ajouter";
         btn.onclick = async () => {
-            await fetch("/friend-request", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({friendId:u.id}) });
-            alert("Demande envoyée !");
+            try {
+                const res = await fetch("/friend-request", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({friendId: u.id})
+                });
+                const data = await res.json();
+                alert(data.message || "Demande envoyée !");
+            } catch(err) {
+                console.error(err);
+                alert("Erreur lors de l'envoi de la demande.");
+            }
         };
+
         li.appendChild(btn);
         ul.appendChild(li);
     });
 }
 
+// Filtre en temps réel au fur et à mesure de la saisie
+document.getElementById("searchInput").addEventListener("input", (e) => {
+    const search = e.target.value.toLowerCase();
+    const filtered = allUsers.filter(u => u.username.toLowerCase().includes(search));
+    displayUsers(filtered);
+});
+
+// Chargement initial et rafraîchissement toutes les 5 secondes
 fetchUsers();
 setInterval(fetchUsers, 5000);
 </script>
