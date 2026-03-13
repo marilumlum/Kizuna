@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session
+// Sessions
 const sessionMiddleware = session({
     secret: "kizuna_secret",
     resave: false,
@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
 // Fichiers statiques
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Database
+// Base de données
 const db = new sqlite3.Database("./server/users.db", (err) => {
     if (err) console.log(err);
     else console.log("Database connected");
@@ -133,19 +133,6 @@ io.on("connection", (socket) => {
             }
         );
     });
-});
-
-// ⚠️ ROUTE TEMPORAIRE POUR RÉINITIALISER TOUS LES UTILISATEURS ET MESSAGES
-app.get("/reset", (req, res) => {
-    db.serialize(() => {
-        db.run("DELETE FROM users", (err) => {
-            if (err) return res.send("Erreur suppression utilisateurs");
-        });
-        db.run("DELETE FROM messages", (err) => {
-            if (err) return res.send("Erreur suppression messages");
-        });
-    });
-    res.send("Base réinitialisée : tous les utilisateurs et messages supprimés !");
 });
 
 // Démarrer serveur
