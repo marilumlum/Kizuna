@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Kizuna - Amis</title>
+<style>
+body { font-family: Arial; background: #DAD7CD; color: #344E41; }
+.container { display: flex; padding: 20px; gap: 20px; }
+.friends, .requests { width: 45%; }
+h2 { margin-top: 0; }
+button { margin-left: 5px; }
+</style>
+</head>
+<body>
+
+<h1>Kizuna - Amis</h1>
+<div class="container">
+    <div class="friends">
+        <h2>Mes Amis</h2>
+        <ul id="friendsList"></ul>
+    </div>
+    <div class="requests">
+        <h2>Demandes d'amis</h2>
+        <ul id="requestsList"></ul>
+    </div>
+</div>
+
+<script>
+async function fetchFriends() {
+    const res = await fetch("/friends");
+    const friends = await res.json();
+    const ul = document.getElementById("friendsList");
+    ul.innerHTML = "";
+    friends.forEach(f => {
+        const li = document.createElement("li");
+        li.textContent = f.username;
+        const btn = document.createElement("button");
+        btn.textContent = "Supprimer";
+        btn.onclick = async () => {
+            await fetch("/friend-delete", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({friendId:f.id}) });
+            fetchFriends();
+        };
+        li.appendChild(btn);
+        ul.appendChild(li);
+    });
+}
+
+async function fetchRequests() {
+    const res = await fetch("/friend-requests");
+    const requests = await res.json();
+    const ul = document.getElementById("requestsList");
+    ul.innerHTML = "";
+    requests.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = r.username;
+        const btnAccept = document.createElement("button");
+        btnAccept.textContent = "Accepter";
+        btnAccept.onclick = async () => {
+            await fetch("/friend-accept", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({requestId:r.id}) });
+            fetchRequests();
+            fetchFriends();
+        };
+        const btnRefuse = document.createElement("button");
+        btnRefuse.textContent = "Refuser";
+        btnRefuse.onclick = async () => {
+            await fetch("/friend-delete", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({friendId:r.user_id}) });
+            fetchRequests();
+        };
+        li.appendChild(btnAccept);
+        li.appendChild(btnRefuse);
+        ul.appendChild(li);
+    });
+}
+
+// Rafraîchir toutes les 5s
+fetchFriends();
+fetchRequests();
+setInterval(() => { fetchFriends(); fetchRequests(); }, 5000);
+</script>
+
+</body>
+</html>

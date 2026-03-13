@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Kizuna - Ajouter des amis</title>
+<style>
+body { font-family: Arial; background: #DAD7CD; color: #344E41; padding: 20px; }
+ul { list-style: none; padding: 0; }
+li { margin-bottom: 5px; }
+button { margin-left: 5px; }
+</style>
+</head>
+<body>
+
+<h1>Ajouter des amis</h1>
+<ul id="usersList"></ul>
+
+<script>
+async function fetchUsers() {
+    const res = await fetch("/users");
+    const users = await res.json();
+    const ul = document.getElementById("usersList");
+    ul.innerHTML = "";
+    users.forEach(u => {
+        const li = document.createElement("li");
+        li.textContent = u.username;
+        const btn = document.createElement("button");
+        btn.textContent = "Ajouter";
+        btn.onclick = async () => {
+            await fetch("/friend-request", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({friendId:u.id}) });
+            alert("Demande envoyée !");
+        };
+        li.appendChild(btn);
+        ul.appendChild(li);
+    });
+}
+
+fetchUsers();
+setInterval(fetchUsers, 5000);
+</script>
+
+</body>
+</html>
