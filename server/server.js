@@ -13,16 +13,16 @@ const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// session
+// Session
 const sessionMiddleware = session({
     secret: "kizuna_secret",
     resave: false,
     saveUninitialized: true
 });
-
 app.use(sessionMiddleware);
 io.use(sharedsession(sessionMiddleware, { autoSave: true }));
 
@@ -31,14 +31,16 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../public/login.html"));
 });
 
-// fichiers publics
+// Fichiers statiques
 app.use(express.static(path.join(__dirname, "../public")));
 
-// database
-const db = new sqlite3.Database("./server/users.db");
+// Database
+const db = new sqlite3.Database("./server/users.db", (err) => {
+    if (err) console.log(err);
+    else console.log("Database connected");
+});
 
 db.serialize(() => {
-
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
@@ -50,112 +52,103 @@ db.serialize(() => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         sender_id INTEGER,
         receiver_id INTEGER,
-        content TEXT
+        content TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
-
 });
 
-// signup
+// SIGNUP
 app.post("/signup", async (req, res) => {
-
     const { username, email, password } = req.body;
+    if (!username || !email || !password) return res.json({ error: "Tous les champs sont obligatoires" });
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     db.run(
         "INSERT INTO users (username,email,password) VALUES (?,?,?)",
-        [username, email, hashed],
-        function(err){
-
-            if(err){
-                return res.json({error:"Utilisateur ou email déjà utilisé"});
+        [username, email, hashedPassword],
+        function(err) {
+            if (err) {
+                if (err.message.includes("users.email")) return res.json({ error: "Email déjà utilisé" });
+                if (err.message.includes("users.username")) return res.json({ error: "Pseudo déjà pris" });
+                return res.json({ error: "Erreur inscription" });
             }
-
-            res.json({message:"Compte créé"});
+            res.json({ message: "Inscription réussie" });
         }
     );
-
 });
 
-// login
+// LOGIN
 app.post("/login", (req, res) => {
-
     const { username, password } = req.body;
-
-    db.get(
-        "SELECT * FROM users WHERE username=?",
-        [username],
-        async (err,user)=>{
-
-            if(!user){
-                return res.json({error:"Utilisateur introuvable"});
-            }
-
-            const match = await bcrypt.compare(password,user.password);
-
-            if(!match){
-                return res.json({error:"Mot de passe incorrect"});
-            }
-
-            req.session.userId = user.id;
-
-            res.json({message:"Connexion réussie"});
-        }
-    );
-
-});
-
-// utilisateurs
-app.get("/users",(req,res)=>{
-
-    db.all("SELECT id,username FROM users",(err,rows)=>{
-
-        res.json(rows || []);
-
+    db.get("SELECT * FROM users WHERE username=?", [username], async (err, user) => {
+        if (!user) return res.json({ error: "Utilisateur introuvable" });
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) return res.json({ error: "Mot de passe incorrect" });
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        res.json({ message: "Connexion réussie" });
     });
-
 });
 
-// messages
-app.get("/messages/:id",(req,res)=>{
+// LISTE UTILISATEURS
+app.get("/users", (req, res) => {
+    const currentUser = req.session.userId || 0;
+    db.all("SELECT id,username FROM users WHERE id != ?", [currentUser], (err, rows) => {
+        res.json(rows || []);
+    });
+});
 
-    const userId=req.session.userId;
-    const other=req.params.id;
-
+// MESSAGES
+app.get("/messages/:id", (req, res) => {
+    const userId = req.session.userId;
+    const otherId = req.params.id;
     db.all(
         `SELECT * FROM messages
          WHERE (sender_id=? AND receiver_id=?)
-         OR (sender_id=? AND receiver_id=?)`,
-        [userId,other,other,userId],
-        (err,rows)=>{
-
+         OR (sender_id=? AND receiver_id=?)
+         ORDER BY timestamp`,
+        [userId, otherId, otherId, userId],
+        (err, rows) => {
             res.json(rows || []);
-
         }
     );
-
 });
 
-// socket
-io.on("connection",(socket)=>{
-
+// SOCKET CHAT
+io.on("connection", (socket) => {
     const userId = socket.handshake.session.userId;
+    if (!userId) return;
 
-    if(!userId) return;
-
-    socket.on("private message",(msg)=>{
-
+    socket.on("private message", (msg) => {
         db.run(
             "INSERT INTO messages (sender_id,receiver_id,content) VALUES (?,?,?)",
-            [userId,msg.receiverId,msg.content]
+            [userId, msg.receiverId, msg.content],
+            function() {
+                io.emit("private message", {
+                    senderId: userId,
+                    receiverId: msg.receiverId,
+                    content: msg.content
+                });
+            }
         );
-
-        io.emit("private message",msg);
-
     });
-
 });
 
-server.listen(PORT,()=>{
-    console.log("Kizuna server running on port "+PORT);
+// ⚠️ ROUTE TEMPORAIRE POUR RÉINITIALISER TOUS LES UTILISATEURS ET MESSAGES
+app.get("/reset", (req, res) => {
+    db.serialize(() => {
+        db.run("DELETE FROM users", (err) => {
+            if (err) return res.send("Erreur suppression utilisateurs");
+        });
+        db.run("DELETE FROM messages", (err) => {
+            if (err) return res.send("Erreur suppression messages");
+        });
+    });
+    res.send("Base réinitialisée : tous les utilisateurs et messages supprimés !");
+});
+
+// Démarrer serveur
+server.listen(PORT, () => {
+    console.log("Kizuna server running on port " + PORT);
 });
