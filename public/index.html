@@ -5,24 +5,50 @@
 <title>Kizuna - Menu Principal</title>
 <style>
 body {
-    font-family: Arial; display:flex; justify-content:center; align-items:center; height:100vh;
-    background-color: #DAD7CD; color:#344E41;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #DAD7CD;
+    color: #344E41;
 }
 .menu {
-    background-color: #5C7650; padding:40px; border-radius:15px; text-align:center;
-    box-shadow:0 0 15px rgba(0,0,0,0.3);
+    background-color: #5C7650;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
 }
-.menu h1 { color:#DAD7CD; margin-bottom:30px; }
-.menu button { display:block; width:200px; padding:15px; margin:10px auto; border:none; border-radius:10px; background:#A3B18A; color:#344E41; font-size:16px; cursor:pointer; transition:.3s; }
-.menu button:hover { background:#344E41; color:#DAD7CD; }
+.menu h1 {
+    color: #DAD7CD;
+    margin-bottom: 30px;
+}
+.menu button {
+    display: block;
+    width: 200px;
+    padding: 15px;
+    margin: 10px auto;
+    border: none;
+    border-radius: 10px;
+    background-color: #A3B18A;
+    color: #344E41;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.menu button:hover {
+    background-color: #344E41;
+    color: #DAD7CD;
+}
 </style>
 </head>
 <body>
 <div class="menu">
-<h1>Kizuna</h1>
-<button onclick="location.href='friends.html'">Mes Amis</button>
-<button onclick="location.href='users.html'">Ajouter des Amis</button>
-<button onclick="location.href='chat.html'">Chat</button>
+    <h1>Kizuna</h1>
+    <button onclick="window.location.href='friends.html';">Mes Amis</button>
+    <button onclick="window.location.href='users.html';">Ajouter des Amis</button>
+    <button onclick="window.location.href='chat.html';">Chat</button>
 </div>
 </body>
 </html>
