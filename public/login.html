@@ -2,136 +2,40 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Connexion - Kizuna</title>
-
+<title>Kizuna - Connexion</title>
 <style>
-
-body{
-    font-family: Arial, sans-serif;
-    background:#DAD7CD;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-}
-
-.container{
-    background:white;
-    padding:30px;
-    border-radius:10px;
-    width:300px;
-    text-align:center;
-    box-shadow:0 0 10px rgba(0,0,0,0.1);
-}
-
-h2{
-    color:#344E41;
-}
-
-input{
-    width:90%;
-    padding:10px;
-    margin:8px 0;
-    border:1px solid #ccc;
-    border-radius:5px;
-}
-
-button{
-    width:100%;
-    padding:10px;
-    background:#5C7650;
-    color:white;
-    border:none;
-    border-radius:5px;
-    cursor:pointer;
-}
-
-button:hover{
-    background:#344E41;
-}
-
-#loginMsg{
-    margin-top:10px;
-    font-weight:bold;
-}
-
+body { font-family: Arial; background: #DAD7CD; color: #344E41; display:flex; justify-content:center; align-items:center; height:100vh; }
+form { background: #5C7650; padding: 30px; border-radius: 15px; box-shadow:0 0 10px rgba(0,0,0,0.3); }
+input, button { display:block; width: 250px; margin:10px auto; padding:10px; border-radius:10px; border:none; }
+button { background:#A3B18A; cursor:pointer; }
 </style>
-
 </head>
-
 <body>
-
-<div class="container">
-
-<h2>Connexion Kizuna</h2>
-
 <form id="loginForm">
-
-<input type="text" id="username" placeholder="Pseudo" required>
-
-<input type="password" id="password" placeholder="Mot de passe" required>
-
+<h2>Connexion Kizuna</h2>
+<input type="text" name="username" placeholder="Pseudo" required>
+<input type="password" name="password" placeholder="Mot de passe" required>
 <button type="submit">Se connecter</button>
-
+<p id="message"></p>
+<p>Pas encore inscrit ? <a href="signup.html">Inscription</a></p>
 </form>
 
-<div id="loginMsg"></div>
-
-<br>
-
-<a href="signup.html">Créer un compte</a>
-
-</div>
-
 <script>
-
-document.getElementById("loginForm").addEventListener("submit", async function(e){
-
+document.getElementById("loginForm").onsubmit = async e => {
     e.preventDefault();
-
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-
+    const form = e.target;
     const res = await fetch("/login", {
-
         method:"POST",
-
-        headers:{
-            "Content-Type":"application/json"
-        },
-
-        body: JSON.stringify({
-            username,
-            password
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            username: form.username.value,
+            password: form.password.value
         })
-
     });
-
     const data = await res.json();
-
-    const msg = document.getElementById("loginMsg");
-
-    if(data.error){
-
-        msg.style.color="red";
-        msg.innerText=data.error;
-
-    }else{
-
-        msg.style.color="green";
-        msg.innerText="Connexion réussie";
-
-        setTimeout(()=>{
-
-            window.location.href="/index.html";
-
-        },1000);
-
-    }
-
-});
-
+    document.getElementById("message").textContent = data.error || data.message;
+    if(data.message) setTimeout(()=>{location.href="index.html"},500);
+};
 </script>
-
 </body>
 </html>
