@@ -13,11 +13,11 @@ const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Sessions
+// sessions
 const sessionMiddleware = session({
     secret: "kizuna_secret",
     resave: false,
@@ -27,10 +27,15 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 io.use(sharedsession(sessionMiddleware, { autoSave: true }));
 
-// Servir les fichiers du dossier public
+// servir les fichiers publics
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Database
+// page par défaut → login
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "../public/login.html"));
+});
+
+// base de données
 const db = new sqlite3.Database("./server/users.db", (err) => {
     if (err) console.log(err);
     else console.log("Database connected");
@@ -53,11 +58,6 @@ db.serialize(() => {
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-});
-
-// Page par défaut → login
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "../public/login.html"));
 });
 
 // SIGNUP
@@ -195,9 +195,7 @@ io.on("connection", (socket) => {
 
 });
 
-// Lancer serveur
+// démarrer serveur
 server.listen(PORT, () => {
-
     console.log("Kizuna server running on port " + PORT);
-
 });
